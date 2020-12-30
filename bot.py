@@ -3,6 +3,7 @@ import json
 import socket
 import subprocess
 
+import discord
 from discord.ext import commands
 
 
@@ -46,7 +47,7 @@ class MyBot(commands.Bot):
             "-Xms512M",
             "-Xmx2G",
             "-jar",
-            f"{self.minecraft_dir}\forge-1.16.4-35.1.13.jar",
+            f"{self.minecraft_dir}\\forge-1.16.4-35.1.13.jar",
             "--nogui",
             cwd=self.minecraft_dir,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
@@ -57,6 +58,7 @@ class MyBot(commands.Bot):
             while s.connect_ex(("98.216.48.19", 25565)):
                 await asyncio.sleep(1)
             await channel.send("Server running!")
+            await self.change_presence(activity=discord.Game(name="Minecraft"))
 
     async def stop_mc(self, channel):
         try:
@@ -74,6 +76,12 @@ class MyBot(commands.Bot):
         self.minecraft_process = None
         self.minecraft_task = None
         await channel.send("Server stopped!")
+        await self.change_presence(status=discord.Status.idle, activity=None)
+
+    async def close(self):
+        """Overrides client close to set status to invisible first"""
+        await self.change_presence(status=discord.Status.invisible, activity=None)
+        return await super().close()
 
 
 bot = MyBot(command_prefix=commands.when_mentioned)
@@ -85,6 +93,7 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print("------")
+    await bot.change_presence(status=discord.Status.idle, activity=None)
 
 
 @bot.command()
@@ -100,3 +109,7 @@ async def stop(ctx):
 
 
 bot.run(bot.api_token)
+
+
+if __name__ == "__main__":
+    bot.run(bot.api_token)
